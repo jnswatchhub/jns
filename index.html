@@ -16,8 +16,6 @@
       padding: 20px;
     }
 
-    /* Remove .gcash-qr styles since we're removing QR code */
-
     .payment-instructions {
       text-align: left;
       margin: 20px 0;
@@ -179,13 +177,16 @@
     .search-container {
       display: flex;
       margin-bottom: 30px;
+      width: 100%;
+      gap: 5px;
     }
     #searchInput {
-      flex-grow: 1;
+      flex: 1;
       padding: 10px;
       font-size: 1rem;
       border: none;
-      border-radius: 5px 0 0 5px;
+      border-radius: 5px;
+      min-width: 0;
     }
     #searchButton {
       padding: 10px 20px;
@@ -194,22 +195,28 @@
       color: var(--text-color);
       border: none;
       cursor: pointer;
-      border-radius: 0 5px 5px 0;
+      border-radius: 5px;
+      white-space: nowrap;
     }
     .media-section {
       margin-bottom: 40px;
     }
     .media-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      padding: 0.5rem;
+      justify-items: center;
     }
     .media-item {
       position: relative;
+      width: 100%;
+      max-width: none;
       overflow: hidden;
-      border-radius: 5px;
+      border-radius: 4px;
       transition: transform 0.3s ease;
       cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
     .media-item:hover {
       transform: scale(1.05);
@@ -217,7 +224,9 @@
     .media-item img {
       width: 100%;
       height: auto;
-    }
+      object-fit: cover;
+      aspect-ratio: 2/3;
+    } 
     .media-info {
       position: absolute;
       bottom: 0;
@@ -253,7 +262,7 @@
     .modal {
       display: none;
       position: fixed;
-      z-index: 1;
+      z-index: 1000; /* Increase z-index to be higher than other elements */
       left: 0;
       top: 0;
       width: 100%;
@@ -394,7 +403,7 @@
       width: 250px;
       background-color: var(--secondary-color);
       transition: left 0.3s ease;
-      z-index: 2;
+      z-index: 4; /* Increase z-index */
       padding-top: 60px;
       box-shadow: 2px 0 5px rgba(0,0,0,0.3);
     }
@@ -405,7 +414,7 @@
       position: fixed;
       left: 20px;
       top: 20px;
-      z-index: 3;
+      z-index: 5; /* Increase z-index to be above sidebar */
       background: var(--primary-color);
       border: none;
       color: var(--text-color);
@@ -453,22 +462,33 @@
         margin: 0 20px;
         padding: 10px;
       }
-      .media-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
-      }
       .search-container {
-        flex-direction: column;
+        flex-direction: row;
+        padding: 0 10px;
+        width: auto;
       }
       #searchInput, #searchButton {
-        width: 100%;
         border-radius: 5px;
-        margin: 5px 0;
+        margin: 0;
       }
       .modal-content {
         margin: 2% auto;
         width: 95%;
         padding: 10px;
+      }
+      .media-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.25rem;
+        padding: 0.25rem;
+      }
+      .media-info {
+        display: none;
+      }
+      .container {
+        padding: 5px;
+      }
+      .media-item:hover {
+        transform: none;
       }
     }
   /* Auth Styles */
@@ -605,7 +625,7 @@
     position: absolute;
     left: 20px;
     top: 70px;
-    z-index: 3;
+    z-index: 3; /* Lower z-index to stay behind modals */
     background: var(--primary-color);
     border: none;
     color: var(--text-color);
@@ -981,8 +1001,7 @@
       <div class="payment-details">
         <p>Selected Plan: <span id="selectedPlan"></span></p>
         <p>Amount: <span id="selectedAmount"></span></p>
-      <!-- Remove QR code related content -->
-      
+     
         <div class="payment-instructions">
         <div class="instruction-step">
           <span class="step-number">1</span>
@@ -1015,17 +1034,18 @@
           <div class="step-content">
             Take screenshots of:
             <div class="sample-screenshots">
-              <img src="samplescreenshot.jpg" 
+              <img src="transactionstab.jpg"  
                    alt="Sample transactions tab screenshot" 
                    class="screenshot-example"
                    width="200"
                    height="400">
-              <img src="transactionstab.jpg" 
+                   <img src="samplescreenshot.jpg"  
                    alt="Sample transaction details screenshot" 
                    class="screenshot-example"
                    width="200"
                    height="400">
             </div>
+
           </div>
         </div>
         
@@ -1452,8 +1472,41 @@
         server2: getServer2Url()
       };
     }
+  
+    function isBraveBrowser() {
+      // Check for Brave's navigator.brave property
+      return navigator?.brave?.isBrave?.name === 'isBrave' ||
+        // Alternative detection using Chrome detection and Brave shields
+        (navigator.userAgent.includes('Chrome') && navigator.plugins.length === 0);
+    }  
 
     function loadVideo(url, mediaDetails = null) {
+      if (!isBraveBrowser()) {
+        const modalContent = document.querySelector('.modal-content');
+        modalContent.innerHTML = `
+          <span class="close">&times;</span>
+          <div class="media-details-container" style="text-align: center;">
+            <h2 style="color: var(--primary-color); margin-bottom: 20px;">Brave Browser Required</h2>
+            <p>For the best and safest streaming experience, please use Brave Browser.</p>
+            <p style="margin: 20px 0;">Brave Browser provides:</p>
+            <ul style="text-align: left; margin: 20px auto; max-width: 400px;">
+              <li>Built-in ad blocking</li>
+              <li>Enhanced privacy protection</li>
+              <li>Better streaming performance</li>
+              <li>Secure browsing experience</li>
+            </ul>
+            <a href="https://play.google.com/store/apps/details?id=com.brave.browser" 
+               target="_blank" 
+               class="video-button" 
+               style="text-decoration: none; display: inline-block; margin-top: 20px;">
+              Download Brave Browser
+            </a>
+          </div>
+        `;
+        setupCloseButton();
+        return;
+      }
+
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
       if (isMobile) {
@@ -1561,7 +1614,11 @@
       
       window.onclick = function(event) {
         if (event.target == modal) {
-          closeModal();
+          modal.style.display = "none";
+          const player = document.getElementById('player');
+          if (player) {
+            player.src = '';
+          }
         }
       }
     }
