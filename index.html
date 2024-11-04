@@ -61,15 +61,17 @@
       gap: 10px;
       margin-top: 10px;
       justify-content: center;
+      flex-wrap: wrap; /* Allow wrapping on small screens */
     }
 
     .screenshot-example {
       max-width: 200px;
+      width: 100%; /* Make width responsive */
       height: auto;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-
+  
     .payment-btn {
       background: linear-gradient(45deg, #00A1E4, #0077B6);
       color: white;
@@ -490,7 +492,42 @@
       .media-item:hover {
         transform: none;
       }
+      .sample-screenshots {
+        gap: 5px; /* Reduce gap on smaller screens */
+      }
+      
+      .screenshot-example {
+        max-width: 150px; /* Reduce max-width on smaller screens */
+      }
     }
+
+    @media (max-width: 480px) {
+      .screenshot-example {
+        max-width: 120px; /* Further reduce size on very small screens */
+      }
+      
+      .payment-instructions {
+        padding: 10px; /* Reduce padding */
+      }
+      
+      .instruction-step {
+        gap: 8px; /* Reduce gap */
+        margin-bottom: 10px; /* Reduce margin */
+      }
+    }
+
+    @media (max-width: 768px) {
+      .payment-modal {
+        width: 95%;
+        margin: 10px auto;
+        padding: 10px;
+      }
+      
+      .payment-details {
+        padding: 10px;
+      }
+    }
+
   /* Auth Styles */
   .user-welcome {
     color: var(--primary-color);
@@ -1034,18 +1071,17 @@
           <div class="step-content">
             Take screenshots of:
             <div class="sample-screenshots">
-              <img src="transactionstab.jpg"  
-                   alt="Sample transactions tab screenshot" 
-                   class="screenshot-example"
-                   width="200"
-                   height="400">
-                   <img src="samplescreenshot.jpg"  
+              <img src="/a/007a4198-58cd-4eec-bba7-6144d8948df8" 
                    alt="Sample transaction details screenshot" 
                    class="screenshot-example"
                    width="200"
                    height="400">
+              <img src="/a/a09aa4e8-4193-4160-a6ae-5e6381b9b196"  
+                   alt="Sample transactions tab screenshot" 
+                   class="screenshot-example"
+                   width="200"
+                   height="400">
             </div>
-
           </div>
         </div>
         
@@ -1054,7 +1090,6 @@
           <div class="step-content">Upload your payment screenshot below</div>
         </div>
       </div>
-
 
       <div class="screenshot-upload">
         <label for="paymentScreenshot" class="upload-btn">
@@ -1117,6 +1152,37 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    
+    async function initializeSampleScreenshots() {
+      const storage = getStorage();
+      
+      const sampleScreenshots = [
+        {
+          src: '/a/a09aa4e8-4193-4160-a6ae-5e6381b9b196',
+          path: 'sample_screenshots/transaction_details.jpg'
+        },
+        {
+          src: '/a/007a4198-58cd-4eec-bba7-6144d8948df8', 
+          path: 'sample_screenshots/transactions_tab.jpg'
+        }
+      ];
+
+      try {
+        for (const screenshot of sampleScreenshots) {
+          const response = await fetch(screenshot.src);
+          const blob = await response.blob();
+          const imageRef = storageRef(storage, screenshot.path);
+          await uploadBytes(imageRef, blob);
+          
+          // Get download URL and update image src
+          const downloadURL = await getDownloadURL(imageRef);
+          const images = document.querySelectorAll(`img[src="${screenshot.src}"]`);
+          images.forEach(img => img.src = downloadURL);
+        }
+      } catch (error) {
+        console.error('Error initializing sample screenshots:', error);
+      }
+    }
 
     const CONFIG = {
       apiKeys: {
@@ -1823,6 +1889,7 @@
       
       initAuth();
       startSubscriptionCheck();
+      await initializeSampleScreenshots();
 
       const pricingButton = document.querySelector('.pricing-button');
       const subscriptionModal = document.getElementById('subscriptionModal');
