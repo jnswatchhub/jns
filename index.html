@@ -1262,29 +1262,35 @@
       const userSnapshot = await get(child(ref(db), 'users/' + username));
       
       if (userSnapshot.exists() && userSnapshot.val().password === password) {
-        const sessionSnapshot = await get(child(ref(db), `sessions/${username}`));
+        const newSessionId = generateSessionId();
         
-        if (sessionSnapshot.exists()) {
-          const lastActive = sessionSnapshot.val().lastActive;
-          const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; 
-          
-          if (Date.now() - lastActive < SESSION_TIMEOUT) {
-            alert('You are already logged in on another device. Please log out from other devices first.');
-            return;
-          }
-        }
-        
-        const sessionId = generateSessionId();
         await set(ref(db, `sessions/${username}`), {
-          sessionId: sessionId,
+          sessionId: newSessionId,
           lastActive: Date.now()
         });
-        
+
+        const sessionRef = ref(db, `sessions/${username}`);
+        const unsubscribe = onValue(sessionRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const session = snapshot.val();
+            if (session.sessionId !== newSessionId) {
+              signOut();
+              unsubscribe();
+              alert('Your account has been logged in on another device, Please login again!');
+            }
+          } else {
+            signOut();
+            unsubscribe();
+            alert('Your account has been logged out to other device, Please login again!');
+          }
+        });
+
         currentUser = username;
         updateAuthButtons();
         document.getElementById('loginModal').style.display = 'none';
         document.getElementById('loginUsername').value = '';
         document.getElementById('loginPassword').value = '';
+
       } else {
         alert('Invalid username or password');
       }
@@ -1303,21 +1309,8 @@
       }
     }
 
-    function updateLastActive() {
-      if (currentUser) {
-        const updates = {};
-        updates[`sessions/${currentUser}/lastActive`] = Date.now();
-        update(ref(db), updates).catch(console.error);
-      }
-    }
-
-    setInterval(updateLastActive, 5 * 60 * 1000);
-
     window.addEventListener('beforeunload', () => {
       if (currentUser) {
-        const data = JSON.stringify({ username: currentUser });
-        navigator.sendBeacon('/api/logout', data);
-        
         const updates = {};
         updates[`sessions/${currentUser}`] = null;
         update(ref(db), updates);
@@ -2166,9 +2159,17 @@
       
       window.addEventListener('scroll', () => {
         if (!isLoading && !isSearchMode && 
-            window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000) {
+          window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1000) {
           loadPopularMedia();
         }
+      });
+      
+      document.querySelector('.site-title').addEventListener('click', () => {
+        currentPage = 1;
+        isSearchMode = false;
+        displayedMediaIds.clear();
+        document.getElementById('searchInput').value = '';
+        loadPopularMedia();
       });
     });
   </script>
